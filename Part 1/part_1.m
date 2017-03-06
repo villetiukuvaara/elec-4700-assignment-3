@@ -25,7 +25,7 @@ p_scat = 1 - exp(-time_step/0.2e-12);
 v_pdf = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/m));
 % Set to 1 to watch the movies,
 % or to 0 to just see the final plots
-show_movie = 0;
+show_movie = 1;
 
 %%
 % Here, the boundaries can be set to be specular or diffusive. If they
@@ -68,6 +68,7 @@ dvy = dvy.*ones(population_size,1);
 state = zeros(population_size, 4);
 trajectories = zeros(iterations, plot_population*2);
 temperature = zeros(iterations,1);
+J = zeros(iterations,2); % Current density as [Jx Jy] rows
 
 %%
 % The relationship between electron drift current density and average
@@ -91,6 +92,29 @@ for i = 1:population_size
     angle = rand*2*pi;
     state(i,:) = [L*rand W*rand random(v_pdf) random(v_pdf)];
 end
+
+figure(1);
+subplot(3,1,1);
+plot([],[]);
+axis([0 L/1e-9 0 W/1e-9]);
+title(sprintf('Trajectories for %d of %d Electrons (Part 3)',...
+    plot_population, population_size));
+xlabel('x (nm)');
+ylabel('y (nm)');
+
+figure(1);
+subplot(3,1,2);
+temperature_plot = animatedline;
+title('Semiconductor Temperature');
+xlabel('Time (s)');
+ylabel('Temperature (K)');
+
+figure(1);
+subplot(3,1,3);
+current_plot = animatedline;
+title('Drift Current Density J_x');
+xlabel('Time (s)');
+ylabel('Current density (A/m)');
 
 %%
 % Run through the simulation:
@@ -144,53 +168,49 @@ for i = 1:iterations
     % Record the temperature
     temperature(i) = (sum(state(:,3).^2) + sum(state(:,4).^2))*m/k/2/population_size;
     
-    % Record positions for subset of particles that will be graphed
+    % Record positions and velocities for subset of particles that will be graphed
     for j=1:plot_population
         trajectories(i, (2*j):(2*j+1)) = state(j, 1:2);
     end 
+    J(i, 1) = L.*density/population_size.*mean(state(:,3));
+    J(i, 2) = W.*density/population_size.*mean(state(:,4));
     
-    % Update the movie every 5 iterations
-    if show_movie && mod(i,5) == 0
-        figure(3);
+    %if i > 1
+        %subplot(3,1,2);
+        %hold off;
+        %plot(time_step*(0:i-1), temperature(1:i));
+        %axis([0 time_step*iterations min(temperature(1:i))*0.98 max(temperature)*1.02]);
+        %title('Semiconductor Temperature');
+        %xlabel('Time (s)');
+        %ylabel('Temperature (K)');
+        addpoints(temperature_plot, time_step.*i, temperature(i));
+        addpoints(current_plot, time_step.*i, J(i,1));
+    %end
+
+%     subplot(3,1,3);
+%     v = sqrt(state(:,3).^2 + state(:,4).^2);
+%     title('Histogram of Electron Speeds');
+%     histogram(v);
+%     xlabel('Speed (m/s)');
+%     ylabel('Number of particles');
+
+    if(show_movie && mod(i,5) == 0)
+        figure(1);
         subplot(3,1,1);
         hold off;
         plot(state(1:plot_population,1)./1e-9, state(1:plot_population,2)./1e-9, 'o');
-        hold on;
-        
-        % Plot the resistive regions
-        %for j=1:size(boxes,1)
-        %   plot([boxes(j, 1) boxes(j, 1) boxes(j, 2) boxes(j, 2) boxes(j, 1)]./1e-9,...
-        %       [boxes(j, 3) boxes(j, 4) boxes(j, 4) boxes(j, 3) boxes(j, 3)]./1e-9, 'k-');
-        %end
-        
         axis([0 L/1e-9 0 W/1e-9]);
+        hold on;
         title(sprintf('Trajectories for %d of %d Electrons (Part 3)',...
         plot_population, population_size));
         xlabel('x (nm)');
         ylabel('y (nm)');
-        if i > 1
-            subplot(3,1,2);
-            hold off;
-            plot(time_step*(0:i-1), temperature(1:i));
-            axis([0 time_step*iterations min(temperature(1:i))*0.98 max(temperature)*1.02]);
-            title('Semiconductor Temperature');
-            xlabel('Time (s)');
-            ylabel('Temperature (K)');
-        end
-        
-        subplot(3,1,3);
-        v = sqrt(state(:,3).^2 + state(:,4).^2);
-        title('Histogram of Electron Speeds');
-        histogram(v);
-        xlabel('Speed (m/s)');
-        ylabel('Number of particles');
-        
         pause(0.05);
     end
 end
 
 % Show trajectories after the movie is over
-figure(3);
+figure(1);
 subplot(3,1,1);
 title(sprintf('Electron Trajectories for %d of %d Electrons (Part 3)',...
     plot_population, population_size));
@@ -200,8 +220,9 @@ axis([0 L/1e-9 0 W/1e-9]);
 hold on;
 for i=1:plot_population
     plot(trajectories(:,i*2)./1e-9, trajectories(:,i*2+1)./1e-9, '.');
-    
 end
+
+return
 
 % Plot the resistive regions
 %for j=1:size(boxes,1)

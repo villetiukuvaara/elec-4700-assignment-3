@@ -3,7 +3,7 @@ close all;
 %% Part 1: Electron Modelling
 % This part is a modification of assignment 1. Here are some parameters for
 % the simuation, including the width $W$ in the $y$-direction and the
-% L $L$ in the $x$-direction.
+% length $L$ in the $x$-direction.
 
 L = 200e-9;
 W = 100e-9;
@@ -46,7 +46,7 @@ Fy = qe*Ey;
 dvx = Fx*time_step/m;
 dvy = Fy*time_step/m;
 dvx = dvx.*ones(population_size,1);
-dvy = dvy.*ones(population_size,1)
+dvy = dvy.*ones(population_size,1);
 
 %%
 % For the simulations, these arrays will hold information about the
@@ -59,7 +59,25 @@ state = zeros(population_size, 4);
 trajectories = zeros(iterations, plot_population*2);
 temperature = zeros(iterations,1);
 
-%% Part 3: Enchancements
+%%
+% The relationship between electron drift current density and average
+% carrier velocity is derived as follows. Let $v_x$ and $v_y$ be the
+% velocity components in $x$ and $y$ for each of the $N$ particles in the simulation.
+% The the average carrier velocties are $\bar{v_x} = 1/N \sum v_x$ and
+% $\bar{v_y} = 1/N \sum v_y$. The electron concentration is $\rho =
+% 10^{15}$ cm^2 and the area is $LW$. Thus the electron drift
+% current densities are
+%
+% $$ J_x = \left( \frac{1}{W} \right) (LW\rho) \left( \frac{1}{N} \right)
+% \sum_{n=1}^N v_{x,n} = \frac{L\rho}{N} \sum_{n=1}^N v_{x,n}$$
+%
+% $$ J_y = \left( \frac{1}{L} \right) (LW\rho) \left( \frac{1}{N} \right)
+% \sum_{n=1}^N v_{y,n} = \frac{W\rho}{N} \sum_{n=1}^N v_{y,n}$$
+%
+% These equations are used to plot the current density over time
+
+
+%%
 % Here, the boundaries can be set to be specular or diffusive. If they
 % are diffusive, the electrons bounce off at a random angle rather than
 % one symmetrical about the normal with the boundary.

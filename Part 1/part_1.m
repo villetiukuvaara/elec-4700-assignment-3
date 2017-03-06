@@ -28,6 +28,16 @@ v_pdf = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/m));
 show_movie = 0;
 
 %%
+% Here, the boundaries can be set to be specular or diffusive. If they
+% are diffusive, the electrons bounce off at a random angle rather than
+% one symmetrical about the normal with the boundary.
+%
+% The non-periodic top and bottom boundaries can be set to be either
+% specular (1) or diffusive (0) with the following parameters:
+top_specular = 1;
+bottom_specular = 1;
+
+%%
 % When the given voltages are applied, the electric field components in the
 % solid are (assuming that the fields are uniform):
 
@@ -76,38 +86,14 @@ temperature = zeros(iterations,1);
 %
 % These equations are used to plot the current density over time
 
-
-%%
-% Here, the boundaries can be set to be specular or diffusive. If they
-% are diffusive, the electrons bounce off at a random angle rather than
-% one symmetrical about the normal with the boundary.
-%
-% The non-periodic top and bottom boundaries can be set to be either
-% specular (1) or diffusive (0) with the following parameters:
-top_specular = 1;
-bottom_specular = 1;
-
-%%
-% This simulation also includes boxes (obstacles)
-% Also, each box can seperately be set to be specular (1) or diffusive (0)
-
-% The values are [xmin xmax ymin ymax] for each box
-boxes = [];%1e-9.*[80 120 0 40; 80 120 60 100];
-boxes_specular = [1 1];
-
 % Generate an initial population
 for i = 1:population_size
     angle = rand*2*pi;
     state(i,:) = [L*rand W*rand random(v_pdf) random(v_pdf)];
-    
-    % Make sure no particles start in a box
-    while(in_box(state(i,1:2), boxes))
-        state(i,1:2) = [L*rand W*rand];
-    end
 end
 
 %%
-% Run through the third simulation:
+% Run through the simulation:
 for i = 1:iterations
     % Update the velocities
     
@@ -151,62 +137,6 @@ for i = 1:iterations
         state(j,4) = abs(v.*sin(angle));
     end
     
-    % Look for particles that have "entered" a box and move them to
-    % where they should be.
-    for j=1:population_size
-        box_num = in_box(state(j,1:2), boxes);
-        while(box_num ~= 0)
-            % To see which side the electron collided with,
-            % find which one it's closer to
-            x_dist = 0;
-            new_x = 0;
-            if(state(j,3) > 0)
-                x_dist = state(j,1) - boxes(box_num,1);
-                new_x = boxes(box_num,1);
-            else
-                x_dist = boxes(box_num,2) - state(j,1);
-                new_x = boxes(box_num,2);
-            end
-            
-            y_dist = 0;
-            new_y = 0;
-            if(state(j,4) > 0)
-                y_dist = state(j,2) - boxes(box_num, 3);
-                new_y = boxes(box_num, 3);
-            else
-                y_dist = boxes(box_num, 4) - state(j,2);
-                new_y = boxes(box_num, 4);
-            end
-            
-            if(x_dist < y_dist)
-                state(j,1) = new_x;
-                if(~boxes_specular(box_num))
-                    sgn = -sign(state(j,3));
-                    v = sqrt(state(j,3).^2 + state(j,4).^2);
-                    angle = rand()*2*pi;
-                    state(j,3) = sgn.*abs(v.*cos(angle));
-                    state(j,4) = v.*sin(angle);
-                else % Specular
-                    state(j,3) = -state(j,3);
-                end
-            else
-                state(j,2) = new_y;
-                if(~boxes_specular(box_num))
-                    sgn = -sign(state(j,4));
-                    v = sqrt(state(j,3).^2 + state(j,4).^2);
-                    angle = rand()*2*pi;
-                    state(j,3) = v.*cos(angle);
-                    state(j,4) = sgn.*abs(v.*sin(angle));
-                else % Specular
-                    state(j,4) = -state(j,4);
-                end
-            end
-            
-            box_num = in_box(state(j,1:2), boxes);
-        end
-    end
-    
-    
     % Scatter particles
     j = rand(population_size, 1) < p_scat;
     state(j,3:4) = random(v_pdf, [sum(j),2]);
@@ -227,11 +157,11 @@ for i = 1:iterations
         plot(state(1:plot_population,1)./1e-9, state(1:plot_population,2)./1e-9, 'o');
         hold on;
         
-        % Plot the boxes
-        for j=1:size(boxes,1)
-           plot([boxes(j, 1) boxes(j, 1) boxes(j, 2) boxes(j, 2) boxes(j, 1)]./1e-9,...
-               [boxes(j, 3) boxes(j, 4) boxes(j, 4) boxes(j, 3) boxes(j, 3)]./1e-9, 'k-');
-        end
+        % Plot the resistive regions
+        %for j=1:size(boxes,1)
+        %   plot([boxes(j, 1) boxes(j, 1) boxes(j, 2) boxes(j, 2) boxes(j, 1)]./1e-9,...
+        %       [boxes(j, 3) boxes(j, 4) boxes(j, 4) boxes(j, 3) boxes(j, 3)]./1e-9, 'k-');
+        %end
         
         axis([0 L/1e-9 0 W/1e-9]);
         title(sprintf('Trajectories for %d of %d Electrons (Part 3)',...
@@ -273,11 +203,11 @@ for i=1:plot_population
     
 end
 
-% Plot the boxes
-for j=1:size(boxes,1)
-   plot([boxes(j, 1) boxes(j, 1) boxes(j, 2) boxes(j, 2) boxes(j, 1)]./1e-9,...
-       [boxes(j, 3) boxes(j, 4) boxes(j, 4) boxes(j, 3) boxes(j, 3)]./1e-9, 'k-');
-end
+% Plot the resistive regions
+%for j=1:size(boxes,1)
+%   plot([boxes(j, 1) boxes(j, 1) boxes(j, 2) boxes(j, 2) boxes(j, 1)]./1e-9,...
+%       [boxes(j, 3) boxes(j, 4) boxes(j, 4) boxes(j, 3) boxes(j, 3)]./1e-9, 'k-');
+%end
 
 % Plot temperature
 if(~show_movie)

@@ -8,7 +8,7 @@ close all;
 L = 200e-9;
 W = 100e-9;
 qe = -1.60217662e-19; % Charge on electron
-Vx = -0.1; % Voltage applied across L (x = 0 is positive)
+Vx = 0.1; % Voltage applied across L (x = 0 is positive)
 Vy = 0; % Voltage applied across W (y = 0 is positive)
 density = 1e15*100^2; % Concentration of electrons in 1/m^2
 m0 = 9.10938356e-31;
@@ -25,7 +25,7 @@ p_scat = 1 - exp(-time_step/0.2e-12);
 v_pdf = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/m));
 % Set to 1 to watch the movies,
 % or to 0 to just see the final plots
-show_movie = 1;
+show_movie = 0;
 
 %%
 % Here, the boundaries can be set to be specular or diffusive. If they
@@ -76,16 +76,16 @@ J = zeros(iterations,2); % Current density as [Jx Jy] rows
 % velocity components in $x$ and $y$ for each of the $N$ particles in the simulation.
 % The the average carrier velocties are $\bar{v_x} = 1/N \sum v_x$ and
 % $\bar{v_y} = 1/N \sum v_y$. The electron concentration is $\rho =
-% 10^{15}$ cm^2 and the area is $LW$. Thus the electron drift
-% current densities are
+% 10^{15}$ cm^2 and the charge is $q$. The electron drift current density
+% components are
 %
-% $$ J_x = \left( \frac{1}{W} \right) (LW\rho) \left( \frac{1}{N} \right)
-% \sum_{n=1}^N v_{x,n} = \frac{L\rho}{N} \sum_{n=1}^N v_{x,n}$$
+% $$ J_x = (q\rho) \left( \frac{1}{N} \right) \sum_{n=1}^N v_{x,n}
+% = \frac{q\rho}{N} \sum_{n=1}^N v_{x,n}$$
 %
-% $$ J_y = \left( \frac{1}{L} \right) (LW\rho) \left( \frac{1}{N} \right)
-% \sum_{n=1}^N v_{y,n} = \frac{W\rho}{N} \sum_{n=1}^N v_{y,n}$$
+% $$ J_y = (q\rho) \left( \frac{1}{N} \right) \sum_{n=1}^N v_{y,n}
+% = \frac{q\rho}{N} \sum_{n=1}^N v_{y,n}$$
 %
-% These equations are used to plot the current density over time
+% These equations are used to plot the current density over time.
 
 % Generate an initial population
 for i = 1:population_size
@@ -171,9 +171,11 @@ for i = 1:iterations
     % Record positions and velocities for subset of particles that will be graphed
     for j=1:plot_population
         trajectories(i, (2*j):(2*j+1)) = state(j, 1:2);
-    end 
-    J(i, 1) = L.*density/population_size.*mean(state(:,3));
-    J(i, 2) = W.*density/population_size.*mean(state(:,4));
+    end
+    
+    % Calculate and record the current density
+    J(i, 1) = qe.*density.*mean(state(:,3));
+    J(i, 2) = qe.*density.*mean(state(:,4));
     
     %if i > 1
         %subplot(3,1,2);

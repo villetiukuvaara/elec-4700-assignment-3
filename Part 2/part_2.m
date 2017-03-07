@@ -1,48 +1,5 @@
-%% Part 2 (part_2.m)
-% This is basically the same as the last part of assignment 2. The equation
-% used to produce the G matrix is the following:
-% 
-% $$\nabla(\sigma \nabla V) = 0$$
-%
-% $$\frac{\partial \sigma}{\partial x}\frac{\partial V}{\partial x}
-% + \sigma\frac{\partial^2 V}{\partial x^2}
-% + \frac{\partial \sigma}{\partial y}\frac{\partial V}{\partial y}
-% + \sigma\frac{\partial^2 V}{\partial y^2} = 0$$
-%
-% To use finite differences (FD), the derivatives can be converted to
-% discrete numerical approximations as follows. Note that there is more
-% than one possible solution here, since there is more than one
-% approximation of the first and second derivatives.
-%
-% $$ \left( \frac{\sigma_{x+1,y}-\sigma_{x-1,y}}{2\Delta x} \right)
-% \left( \frac{V_{x+1,y}-V_{x-1,y}}{2\Delta x} \right)
-% + \sigma_{x,y}  \left( \frac{V_{x+1,y} - 2V_{x,y}+V_{x-1,y}}{(\Delta
-% x)^2} \right)$$
-%
-% $$+ \left( \frac{\sigma_{x,y+1}-\sigma_{x,y-1}}{2\Delta y} \right)
-% \left( \frac{V_{x,y+1}-V_{x,y-1}}{2\Delta y} \right)
-% + \sigma_{x,y}  \left( \frac{V_{x,y+1} - 2V_{x,y}+V_{x,y-1}}{(\Delta y)^2} \right)=0 $$
-%
-% Finally, to construct the G matrix, it is better to express the above
-% expression with coefficients in front of the $V$ terms. The final
-% equation is:
-%
-% $$\left(\frac{1}{4(\Delta x)^2}(\sigma_{x+1,y}-\sigma_{x-1,y}) +
-% \frac{\sigma_{x,y}}{(\Delta x)^2}\right) V_{x+1,y}
-% +\left(\frac{-1}{4(\Delta x)^2}(\sigma_{x+1,y}-\sigma_{x-1,y}) +
-% \frac{\sigma_{x,y}}{(\Delta x)^2}\right) V_{x-1,y}$$
-%
-% $$+\left(\frac{1}{4(\Delta y)^2}(\sigma_{x,y+1}-\sigma_{x,y-1}) +
-% \frac{\sigma_{x,y}}{(\Delta y)^2}\right) V_{x,y+1}
-% +\left(\frac{-1}{4(\Delta y)^2}(\sigma_{x,y+1}-\sigma_{x,y-1}) +
-% \frac{\sigma_{x,y}}{(\Delta y)^2}\right) V_{x,y-1}$$
-%
-% $$-2\sigma_{x,y} \left( \frac{1}{(\Delta x)^2}
-% + \frac{1}{(\Delta y)^2}\right) V_{x,y} =0$$
-%
-% Here are some parameters for the simulation. Note the the simulation is
-% performed with a scale factor of 1 : 100 nm. This is better to avoid
-% numerical issues.
+%% Part 3 (part_3.m)
+% This last part couples the previous two parts.
 
 clear all;
 close all;
@@ -138,25 +95,16 @@ end
 %%
 % Next, the F matrix is generated.
 
-% The part of the boundary at V = V0
-for x=1:floor(nx/2)
+% The top and bottom boundaries
+for x=2:(nx-1)
     index = mapCoordinate(x,1,nx);
     G(index,index) = 1;
-    F(index) = V0;
-    
-    index = mapCoordinate(x,ny,nx);
-    G(index,index) = 1;
-    F(index) = V0;
-end
-
-% The part of the boundary where V = 0
-for x=floor(nx/2):nx
-    index = mapCoordinate(x,1,nx);
-    G(index,index) = 1;
+    G(index,mapCoordinate(x,2,nx)) = -1;
     F(index) = 0;
     
     index = mapCoordinate(x,ny,nx);
     G(index,index) = 1;
+    G(index,mapCoordinate(x,ny-1,nx)) = -1;
     F(index) = 0;
 end
 

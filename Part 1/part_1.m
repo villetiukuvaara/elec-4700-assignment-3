@@ -1,9 +1,10 @@
-clear all;
-close all;
 %% Part 1: Electron Modelling
 % This part is a modification of assignment 1. Here are some parameters for
 % the simuation, including the width $W$ in the $y$-direction and the
 % length $L$ in the $x$-direction.
+
+clear all;
+close all;
 
 L = 200e-9;
 W = 100e-9;
@@ -17,10 +18,10 @@ T = 300;
 k = 1.38064852e-23;
 vth = sqrt(2*k*T/m);
 l = vth*0.2e-12; % Mean free path
-population_size = 1000;
-plot_population = 3;
+population_size = 30000;
+plot_population = 10;
 time_step = W/vth/100;
-iterations = 1000;
+iterations = 200;
 p_scat = 1 - exp(-time_step/0.2e-12);
 v_pdf = makedist('Normal', 'mu', 0, 'sigma', sqrt(k*T/m));
 % Set to 1 to watch the movies,
@@ -34,8 +35,8 @@ show_movie = 0;
 %
 % The non-periodic top and bottom boundaries can be set to be either
 % specular (1) or diffusive (0) with the following parameters:
-top_specular = 1;
-bottom_specular = 1;
+top_specular = 0;
+bottom_specular = 0;
 
 %%
 % When the given voltages are applied, the electric field components in the
@@ -47,8 +48,8 @@ Ey = Vy/W
 %%
 % The force on each electron is
 
-Fx = qe*Ex;
-Fy = qe*Ey;
+Fx = qe*Ex
+Fy = qe*Ey
 
 %%
 % For one time step, this increases the speed in each direction by
@@ -108,6 +109,7 @@ temperature_plot = animatedline;
 title('Semiconductor Temperature');
 xlabel('Time (s)');
 ylabel('Temperature (K)');
+grid on;
 
 figure(1);
 subplot(3,1,3);
@@ -115,6 +117,7 @@ current_plot = animatedline;
 title('Drift Current Density J_x');
 xlabel('Time (s)');
 ylabel('Current density (A/m)');
+grid on;
 
 %%
 % Run through the simulation:
@@ -173,28 +176,13 @@ for i = 1:iterations
         trajectories(i, (2*j):(2*j+1)) = state(j, 1:2);
     end
     
-    % Calculate and record the current density
+    % Calculate and record the current density using the formula from above
     J(i, 1) = qe.*density.*mean(state(:,3));
     J(i, 2) = qe.*density.*mean(state(:,4));
-    
-    %if i > 1
-        %subplot(3,1,2);
-        %hold off;
-        %plot(time_step*(0:i-1), temperature(1:i));
-        %axis([0 time_step*iterations min(temperature(1:i))*0.98 max(temperature)*1.02]);
-        %title('Semiconductor Temperature');
-        %xlabel('Time (s)');
-        %ylabel('Temperature (K)');
-        addpoints(temperature_plot, time_step.*i, temperature(i));
-        addpoints(current_plot, time_step.*i, J(i,1));
-    %end
 
-%     subplot(3,1,3);
-%     v = sqrt(state(:,3).^2 + state(:,4).^2);
-%     title('Histogram of Electron Speeds');
-%     histogram(v);
-%     xlabel('Speed (m/s)');
-%     ylabel('Number of particles');
+    % Plot the temperature and current
+    addpoints(temperature_plot, time_step.*i, temperature(i));
+    addpoints(current_plot, time_step.*i, J(i,1));
 
     if(show_movie && mod(i,5) == 0)
         figure(1);
@@ -219,52 +207,34 @@ title(sprintf('Electron Trajectories for %d of %d Electrons (Part 3)',...
 xlabel('x (nm)');
 ylabel('y (nm)');
 axis([0 L/1e-9 0 W/1e-9]);
+grid on;
 hold on;
 for i=1:plot_population
     plot(trajectories(:,i*2)./1e-9, trajectories(:,i*2+1)./1e-9, '.');
 end
 
-return
-
-% Plot the resistive regions
-%for j=1:size(boxes,1)
-%   plot([boxes(j, 1) boxes(j, 1) boxes(j, 2) boxes(j, 2) boxes(j, 1)]./1e-9,...
-%       [boxes(j, 3) boxes(j, 4) boxes(j, 4) boxes(j, 3) boxes(j, 3)]./1e-9, 'k-');
-%end
-
-% Plot temperature
-if(~show_movie)
-    subplot(3,1,2);
-    hold off;
-    plot(time_step*(0:iterations-1), temperature);
-    axis([0 time_step*iterations min(temperature)*0.98 max(temperature)*1.02]);
-    title('Semiconductor Temperature');
-    xlabel('Time (s)');
-    ylabel('Temperature (K)');
-end
-
-subplot(3,1,3);
-v = sqrt(state(:,3).^2 + state(:,4).^2);
-title('Histogram of Electron Speeds');
-histogram(v);
-xlabel('Speed (m/s)');
-ylabel('Number of particles');
-return;
 %%
-% For the final simulation, an electron density map is created, by creating
-% a 2D histogram over space:
+% The plot of current density over time shows that it starts at 0 and increases
+% over a period of about 0.5 ps to a steady state current. For this case
+% with 0.1 V, the steady state current is about 87 A/mm. The reason that it
+% starts at 0 is that the velocity is distributed using the equilibrium
+% velocity distribution at the start, with none of the particles having
+% accelerated yet.
+
+%%
+% First, plot the electron density. This involves performing some smoothing
+% (filtering) using the conv2 function (Gaussian filtering). 
 
 density = hist3(state(:,1:2),[200 100])';
-
-% Smooth out the electron density map
 N = 20;
-sigma = 3;
-[x y]=meshgrid(round(-N/2):round(N/2), round(-N/2):round(N/2));
+sigma = 1.5;
+[x y] = meshgrid(round(-N/2):round(N/2), round(-N/2):round(N/2));
 f=exp(-x.^2/(2*sigma^2)-y.^2/(2*sigma^2));
 f=f./sum(f(:));
-figure(4);
-imagesc(conv2(density,f,'same'));
-set(gca,'YDir','normal');
+figure(2);
+density = conv2(density,f,'same');
+density = density/(W./size(density,1)*L./size(density,2));
+surf(conv2(density,f,'same'));
 title('Electron Density');
 xlabel('x (nm)');
 ylabel('y (nm)');
@@ -303,19 +273,14 @@ temp = temp';
 
 %%
 % Like with the density map, perform some smoothing:
+
 N = 20;
-sigma = 3;
-[x y]=meshgrid(round(-N/2):round(N/2), round(-N/2):round(N/2));
+sigma = 1.5;
+[x y] = meshgrid(round(-N/2):round(N/2), round(-N/2):round(N/2));
 f=exp(-x.^2/(2*sigma^2)-y.^2/(2*sigma^2));
 f=f./sum(f(:));
-figure(5);
-imagesc(conv2(temp,f,'same'));
-set(gca,'YDir','normal');
+figure(3);
+surf(conv2(temp,f,'same'));
 title('Temperature Map');
 xlabel('x (nm)');
 ylabel('y (nm)');
-
-%%
-% The relationship between the temperature map and the electron density map
-% is very noticable. However, some the of the electrons have considerably
-% higher speeds, and this can be seen on the temperature map.
